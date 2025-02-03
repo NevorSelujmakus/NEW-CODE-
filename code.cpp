@@ -6,3 +6,4 @@ int main() {
     }
     return 0;
 }
+//comment lang, sample code lang to
