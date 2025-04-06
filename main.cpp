@@ -1,69 +1,97 @@
 #include <iostream>
-#include <stack>
+#include <queue>
 
 using namespace std;
 
-int main(){
-    stack<string> mystack;
-    char orders[50];
-    char input = ' ';
-    cout << "[A] Push Data" << endl;
-    cout << "[B] Pop Data" << endl;
-    cout << "[C] show top" << endl;
-    cout << "[D] show size" << endl;
-    cout << "[E] Exit" << endl;
-    cout << "[F] Show all orders" << endl;
-    
+// just like the stack example, I used a temporary queue to 
+//display all the people in the queue
+// because I don't want to modify the original queue.
 
-    while (input != 'E'){
+void showQueue(queue<string> q) {
+    if (q.empty()) {
+        cout << "🎢 The queue is empty! No one is waiting.\n";
+    } else {
+        cout << "👥 Current queue lineup:\n";
+        int position = 1;
+        while (!q.empty()) {
+            cout << position << ". " << q.front() << endl;
+            q.pop();
+            position++;
+        }
+    }
+}
 
-        cout << "Enter your choice: ";
-        cin >> input;
+int main() {
+    queue<string> rideQueue;
+    char choice;
+    int num;
+    string name;
+
+    cout << "🎡 Welcome to the Amusement Park Ride Queue System 🎢\n";
+    cout << "[A] Enter Ride Queue\n";
+    cout << "[B] Let the First Person Ride\n";
+    cout << "[C] Show Who's Next\n";
+    cout << "[D] Show Who's Last\n";
+    cout << "[E] Show Full Queue\n";
+    cout << "[F] Close Ride\n";
+
+    do {
+        cout << "\nEnter choice: ";
+        cin >> choice;
         
-        switch (input){
-            case 'A':
-                cout << "Enter your order: ";
-                cin >> orders;
-                mystack.push(orders);
+        switch (choice) {
+            case 'A': 
+            cout << "Enter how many people are joining the queue: ";
+            cin >> num;
+            for (int i = 0; i < num; i++) { 
+                    cout << "Enter name: ";
+                    cin >> name;
+                    rideQueue.push(name);
+                    cout << "✅ " << name << " has joined the queue!\n";
+                }
                 break;
+            
             case 'B':
-                if (mystack.empty()){
-                    cout << "Stack is empty" << endl;
+                if (rideQueue.empty()) {
+                    cout << "⚠️ No one is in the queue!\n";
                 } else {
-                    cout << "Data " << mystack.top() << " has been removed" << endl;
-                    mystack.pop();
+                    cout << "🎢 " << rideQueue.front() << " is now riding!\n";
+                    rideQueue.pop();
                 }
                 break;
+
             case 'C':
-                if (mystack.empty()){
-                    cout << "Stack is empty" << endl;
+                if (rideQueue.empty()) {
+                    cout << "⚠️ No one is waiting!\n";
                 } else {
-                    cout << "Top data: " << mystack.top() << endl;
+                    cout << "👤 Next to ride: " << rideQueue.front() << endl;
                 }
                 break;
+
             case 'D':
-                cout << "Size of stack: " << mystack.size() << endl;
+                if (rideQueue.empty()) {
+                    cout << "⚠️ No one is in the queue!\n";
+                } else {
+                    cout << "🛑 Last person in line: " << rideQueue.back() << endl;
+                }
                 break;
+
             case 'E':
-                cout << "Exiting program" << endl;
+                showQueue(rideQueue);
                 break;
+
             case 'F':
-                if (mystack.empty()){
-                    cout << "Stack is empty" << endl;
-                }
-                else{
-                    int x=1;
-                    while (!mystack.empty()){
-                        cout << "Order(" << x << "): " << mystack.top() << endl;
-                        mystack.pop();
-                        x++;} 
-                }
-                break;     
+                cout << "🎡 Ride is closing. Final queue lineup:\n";
+                showQueue(rideQueue);
+                cout << "🎢 The ride is now closed!\n";
+                break;
+
             default:
-                cout << "Invalid input" << endl;
+                cout << "⚠️ Invalid choice! Please enter a valid option.\n";
                 break;
         }
-        
-    }
+
+    } while (choice != 'F');
+
     return 0;
 }
