@@ -1,17 +1,182 @@
-//██╗     ██╗██████╗ ██████╗  █████╗ ██████╗ ██╗   ██╗ 
-//██║     ██║██╔══██╗██╔══██╗██╔══██╗██╔══██╗╚██╗ ██╔╝ 
-//██║     ██║██████╔╝██████╔╝███████║██████╔╝ ╚████╔╝  
-//██║     ██║██╔══██╗██╔══██╗██╔══██║██╔══██╗  ╚██╔╝   
-//███████╗██║██████╔╝██║  ██║██║  ██║██║  ██║   ██║    
-//╚══════╝╚═╝╚═════╝ ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝   ╚═╝    
-//=====================================================
-
 #include <iostream>
 #include <string>
 #include <chrono>
 #include <thread>
+#include <vector>
 using namespace std;
 
+// AVL Book please help
+struct Book {
+    string title;
+    string author;
+    string publisher;
+    string date;
+    string isbn;
+};
+
+struct AVLNode {
+    Book book;
+    AVLNode* left;
+    AVLNode* right;
+    int height;
+};
+
+int getHeight(AVLNode* node) {
+    return node ? node->height : 0;
+}
+
+int getBalance(AVLNode* node) {
+    return node ? getHeight(node->left) - getHeight(node->right) : 0;
+}
+
+int max(int a, int b) {
+    return (a > b) ? a : b;
+}
+
+string toLower(const string& str) {
+    string lower = str;
+    for (char& c : lower)
+        c = tolower(c);
+    return lower;
+}
+
+AVLNode* createNode(Book book) {
+    AVLNode* node = new AVLNode;
+    node->book = book;
+    node->left = node->right = nullptr;
+    node->height = 1;
+    return node;
+}
+
+AVLNode* rightRotate(AVLNode* y) {
+    AVLNode* x = y->left;
+    AVLNode* T2 = x->right;
+    x->right = y;
+    y->left = T2;
+    y->height = max(getHeight(y->left), getHeight(y->right)) + 1;
+    x->height = max(getHeight(x->left), getHeight(x->right)) + 1;
+    return x;
+}
+
+AVLNode* leftRotate(AVLNode* x) {
+    AVLNode* y = x->right;
+    AVLNode* T2 = y->left;
+    y->left = x;
+    x->right = T2;
+    x->height = max(getHeight(x->left), getHeight(x->right)) + 1;
+    y->height = max(getHeight(y->left), getHeight(y->right)) + 1;
+    return y;
+}
+
+AVLNode* insert(AVLNode* node, Book book) {
+    if (!node) return createNode(book);
+    if (toLower(book.title) < toLower(node->book.title))
+        node->left = insert(node->left, book);
+    else if (toLower(book.title) > toLower(node->book.title))
+        node->right = insert(node->right, book);
+    else
+        return node;
+    node->height = max(getHeight(node->left), getHeight(node->right)) + 1;
+    int balance = getBalance(node);
+    if (balance > 1 && toLower(book.title) < toLower(node->left->book.title))
+        return rightRotate(node);
+    if (balance < -1 && toLower(book.title) > toLower(node->right->book.title))
+        return leftRotate(node);
+    if (balance > 1 && toLower(book.title) > toLower(node->left->book.title)) {
+        node->left = leftRotate(node->left);
+        return rightRotate(node);
+    }
+    if (balance < -1 && toLower(book.title) < toLower(node->right->book.title)) {
+        node->right = rightRotate(node->right);
+        return leftRotate(node);
+    }
+    return node;
+}
+
+AVLNode* minValueNode(AVLNode* node) {
+    AVLNode* current = node;
+    while (current->left != nullptr)
+        current = current->left;
+    return current;
+}
+
+AVLNode* deleteNode(AVLNode* root, string title) {
+    if (!root) return root;
+    string target = toLower(title);
+    string current = toLower(root->book.title);
+    if (target < current)
+        root->left = deleteNode(root->left, title);
+    else if (target > current)
+        root->right = deleteNode(root->right, title);
+    else {
+        if (!root->left || !root->right) {
+            AVLNode* temp = root->left ? root->left : root->right;
+            if (!temp) {
+                delete root;
+                return nullptr;
+            } else {
+                *root = *temp;
+                delete temp;
+            }
+        } else {
+            AVLNode* temp = minValueNode(root->right);
+            root->book = temp->book;
+            root->right = deleteNode(root->right, temp->book.title);
+        }
+    }
+    if (!root) return root;
+    root->height = max(getHeight(root->left), getHeight(root->right)) + 1;
+    int balance = getBalance(root);
+    if (balance > 1 && getBalance(root->left) >= 0)
+        return rightRotate(root);
+    if (balance > 1 && getBalance(root->left) < 0) {
+        root->left = leftRotate(root->left);
+        return rightRotate(root);
+    }
+    if (balance < -1 && getBalance(root->right) <= 0)
+        return leftRotate(root);
+    if (balance < -1 && getBalance(root->right) > 0) {
+        root->right = rightRotate(root->right);
+        return leftRotate(root);
+    }
+    return root;
+}
+
+void displayBook(const Book& book) {
+    cout << "-------------------------------\n";
+    cout << "Title: " << book.title << "\n";
+    cout << "Author: " << book.author << "\n";
+    cout << "Publisher: " << book.publisher << "\n";
+    cout << "Date: " << book.date << "\n";
+    cout << "ISBN: " << book.isbn << "\n";
+}
+
+void searchBooks(AVLNode* root, const string& keyword, bool& found) {
+    if (!root) return;
+    string kw = toLower(keyword);
+    Book& bk = root->book;
+    bool match =
+        toLower(bk.title).find(kw) != string::npos ||
+        toLower(bk.author).find(kw) != string::npos ||
+        toLower(bk.publisher).find(kw) != string::npos ||
+        toLower(bk.date).find(kw) != string::npos ||
+        toLower(bk.isbn).find(kw) != string::npos;
+    if (match) {
+        displayBook(bk);
+        found = true;
+    }
+    searchBooks(root->left, keyword, found);
+    searchBooks(root->right, keyword, found);
+}
+
+void displayAll(AVLNode* root) {
+    if (!root) return;
+    displayAll(root->left);
+    displayBook(root->book);
+    displayAll(root->right);
+}
+
+// Interface Functions
 void titleScreen() {
     while (true) {
         cout << R"(
@@ -51,8 +216,10 @@ void titleScreen() {
     }
 }
 
-void menu() {
+void menu(AVLNode*& root) {
     int choice;
+    Book b;
+    string keyword;
     cout << "|-======================-|" << endl;
     cout << "        Main Menu" << endl;
     cout << "|-======================-|" << endl;
@@ -64,37 +231,41 @@ void menu() {
     cout << "|-======================-|" << endl;
     cout << "Choose an option: ";
     cin >> choice;
+    cin.ignore();
     switch (choice) {
-        case 1:
-            cout << "(Call Search Function)" << endl;
-            // Search function go here // I also assume there's a loop here
-            cin.ignore();
-            cout << "Press any key to continue." << endl;
-            cin.get();
+        case 1: {
+            cout << "Enter any keyword (title, author, publisher, date, or ISBN): ";
+            getline(cin, keyword);
+            bool found = false;
+            searchBooks(root, keyword, found);
+            if (!found) cout << "No matching book found.\n";
+            cout << "Press Enter to continue."; cin.get();
             system("clear");
             break;
+        }
         case 2:
-            cout << "(Call View Function)" << endl;
-            // View function go here
-            cin.ignore();
-            cout << "Press any key to continue." << endl;
-            cin.get();
+            cout << "\nAll Books in Catalog:\n";
+            displayAll(root);
+            cout << "Press Enter to continue."; cin.get();
             system("clear");
             break;
         case 3:
-            cout << "(Call Add Function)" << endl;
-            // Add function go here // I also assume there's a loop here
-            cin.ignore();
-            cout << "Press any key to continue." << endl;
-            cin.get();
+            cout << "Enter Title: "; getline(cin, b.title);
+            cout << "Enter Author: "; getline(cin, b.author);
+            cout << "Enter Publisher: "; getline(cin, b.publisher);
+            cout << "Enter Date: "; getline(cin, b.date);
+            cout << "Enter ISBN: "; getline(cin, b.isbn);
+            root = insert(root, b);
+            cout << "Book added!\n";
+            cout << "Press Enter to continue."; cin.get();
             system("clear");
             break;
         case 4:
-            cout << "(Call Remove Function)" << endl;
-            // Remove function go here // I also assume there's a loop here
-            cin.ignore();
-            cout << "Press any key to continue." << endl;
-            cin.get();
+            cout << "Enter Title to delete: ";
+            getline(cin, keyword);
+            root = deleteNode(root, keyword);
+            cout << "Book deleted (if it existed).\n";
+            cout << "Press Enter to continue."; cin.get();
             system("clear");
             break;
         case 5:
@@ -112,37 +283,24 @@ void menu() {
 }
 
 int main() {
+    AVLNode* root = nullptr;
+    // Initial books
+    vector<Book> books = {
+        {"One Piece", "Eiichiro Oda", "Shueisha", "1997", "9780000001"},
+        {"Naruto", "Masashi Kishimoto", "Shueisha", "1999", "9780000002"},
+        {"Dragon Ball", "Akira Toriyama", "Shueisha", "1984", "9780000003"},
+        {"Fire Force", "Atsushi Ohkubo", "Kodansha", "2015", "9780000004"},
+        {"Frieren", "Kanehito Yamada", "Shogakukan", "2020", "9780000005"},
+        {"Slime", "Fuse", "Kodansha", "2014", "9780000006"},
+        {"Bleach", "Tite Kubo", "Shueisha", "2001", "9780000007"}
+    };
+    for (Book b : books)
+        root = insert(root, b);
+
     titleScreen();
     while (true) {
-        menu();
+        menu(root);
         cout << endl;
     }
     return 0;
 }
-
-// ok so i dunno if we can do descriptions of the books here cus it'll be long af
-// like imagine putting "When Mr. Earnshaw, master of Wuthering Heights, returns from a trip with an unkempt orphan in tow, 
-// he announces that the child, Heathcliff, is now a member of the family. 
-// While young Catherine Earnshaw becomes close with Heathcliff, her older brother Hindley sinks into bitter resentment. 
-// As Catherine and Heathcliff mature, and their affection blossoms into desire, Hindley's resentment boils over into hatred, 
-// setting the stage for a tragic drama whose aftermath will shake the foundations of their world."
-
-// I also assume the view books will list em as
-// =============
-// 1. Book Title
-// Book Author
-// Edition
-// Publication Date
-// Publisher
-// ISBN
-// =============
-// =============
-// 2. Book Title
-// Book Author
-// Edition
-// Publication Date
-// Publisher
-// ISBN
-// =============
-
-//Add comment.
